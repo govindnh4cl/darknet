@@ -1,6 +1,7 @@
 from ctypes import *
 import math
 import random
+import time
 
 def sample(probs):
     s = sum(probs)
@@ -122,14 +123,13 @@ def classify(net, meta, im):
     res = sorted(res, key=lambda x: -x[1])
     return res
 
-def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
-    im = load_image(image, 0, 0)
+def detect(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45):
     num = c_int(0)
     pnum = pointer(num)
     predict_image(net, im)
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum)
     num = pnum[0]
-    if (nms): do_nms_obj(dets, num, meta.classes, nms);
+    if (nms): do_nms_obj(dets, num, meta.classes, nms)
 
     res = []
     for j in range(num):
@@ -138,7 +138,6 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
                 b = dets[j].bbox
                 res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
     res = sorted(res, key=lambda x: -x[1])
-    free_image(im)
     free_detections(dets, num)
     return res
     
@@ -148,9 +147,37 @@ if __name__ == "__main__":
     #meta = load_meta("cfg/imagenet1k.data")
     #r = classify(net, meta, im)
     #print r[:10]
-    net = load_net("cfg/tiny-yolo.cfg", "tiny-yolo.weights", 0)
-    meta = load_meta("cfg/coco.data")
-    r = detect(net, meta, "data/dog.jpg")
-    print r
     
+    if 0:
+        net = load_net(b"cfg/yolov3.cfg", b"weights/yolov3.weights", 0)
+        meta = load_meta(b"cfg/coco.data")       
+    elif 1:
+        net = load_net(b"cfg/yolov3-voc.person.cfg", b"backup/yolov3-voc_300.weights", 0)
+        meta = load_meta(b"cfg/voc.person.data")           
+    else:
+        net = load_net(b"cfg/yolov3-tiny.cfg", b"weights/yolov3-tiny.weights", 0)
+        meta = load_meta(b"cfg/coco.data")
+    
+    count_warm_up = 10
+    count_actual = 100
+
+    image_path = b"data/dog.jpg"
+    image = load_image(image_path, 0, 0)
+
+    print('Profiling warm-up time for {:d} iterations.'.format(count_warm_up))
+    start_time = time.time()
+    for i in range(count_warm_up):
+        r = detect(net, meta, image)
+    print('Time at warm up: {:.0f}ms'.format(1000 * (time.time() - start_time)/count_warm_up))
+    
+    print('Profiling actual time for {:d} iterations.'.format(count_actual))
+    start_time = time.time()
+    for i in range(count_actual):
+        r = detect(net, meta, image)
+    print('Time at warm up: {:.0f}ms'.format(1000 * (time.time() - start_time)/count_actual))
+    
+    free_image(image)    
+    
+
+
 

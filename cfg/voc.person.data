@@ -1,0 +1,6 @@
+classes= 1
+train  = 2012_train.txt
+valid  = 2012_val.txt
+names = data/voc.person.names
+backup = backup
+
