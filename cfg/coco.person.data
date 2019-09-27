@@ -1,0 +1,8 @@
+classes= 1
+train  = ivs_train.txt
+# valid  = coco_testdev
+valid = ivs_val.txt
+names = data/coco.person.names
+backup = backup
+eval=coco
+
